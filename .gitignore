@@ -2,8 +2,6 @@
 data/raw/
 data/augmented/
 
-# Optionally ignore generated features if they are big
-features/*.npy
 
 # Python stuff
 __pycache__/
