@@ -1,6 +1,7 @@
 # Raw and augmented images (large, not needed on GitHub)
 data/raw/
 data/augmented/
+tests/test_images
 
 
 # Python stuff
