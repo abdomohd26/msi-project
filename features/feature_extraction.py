@@ -8,8 +8,11 @@ from .hand_crafted_feature_extraction import (
     image_to_feature_hist_grad,
     image_to_feature_advanced,
 )
-from .cnn_feature_extraction import image_to_feature_cnn
 
+from .cnn_feature_extraction import (
+    image_to_feature_cnn,
+    image_to_feature_cnn_lbp,
+)
 
 
 def load_split_csv(csv_path):
@@ -61,6 +64,8 @@ def paths_to_features(csv_path, output_prefix, method="hist_grad", size=(64, 64)
                 feat = image_to_feature_advanced(arr)
             elif method == "cnn":
                 feat = image_to_feature_cnn(arr)
+            elif method == "cnn_lbp":
+                feat = image_to_feature_cnn_lbp(arr)
             else:
                 raise ValueError(f"Unknown method: {method}")
             if feat is not None:
@@ -85,14 +90,14 @@ def paths_to_features(csv_path, output_prefix, method="hist_grad", size=(64, 64)
 if __name__ == "__main__":
     Path("features").mkdir(exist_ok=True)
 
-    method = "cnn"  # flat, hist_grad, advanced, cnn
-    size = (128, 128)
+    method = "cnn_lbp"  # flat, hist_grad, advanced, cnn, cnn_lbp
+    size = (256, 256)
     
     # Train features with advanced method
     paths_to_features(
         csv_path="data/splits/train_paths.csv",
         output_prefix="features/train",
-        method=method,   # hist_grad or advanced
+        method=method,
         size=size,
     )
 
@@ -100,6 +105,6 @@ if __name__ == "__main__":
     paths_to_features(
         csv_path="data/splits/val_paths.csv",
         output_prefix="features/val",
-        method=method,   # hist_grad or advanced
+        method=method,
         size=size,
     )
