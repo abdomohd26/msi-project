@@ -7,7 +7,8 @@ SVM_CONFIG = {
     "class_weight": class_weights
 }
 
-UNKNOWN_THRESHOLD = 0.6   # confidence threshold
+UNKNOWN_THRESHOLD = 0.4 
+TRASH_THRESHOLD = 0.35   # Adjust: lower → more Trash recall, higher → more precision
 
 KNN_CONFIG = {
     "n_neighbors": 9,
