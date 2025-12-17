@@ -1,13 +1,19 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import cv2
 import joblib
 import json
 import numpy as np
-import os
+import sys
+
+# Add project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import project modules
 # Assumes running from project root or src is in pythonpath
 from src.unknown_handler import handle_unknown
-from features.cnn_feature_extraction import image_to_feature_cnn
+from features.cnn_feature_extraction import image_to_feature_cnn_lbp
 
 # Configuration
 MODEL_PATH = os.path.join("models", "svm", "svm_model.pkl")
@@ -61,13 +67,13 @@ def predict(image_bgr):
     # The CNN extractor will handle further resizing/normalization if needed (internally resizes to 224)
     image_resized = cv2.resize(image_rgb, PREPROCESS_SIZE)
     
-    # Normalize to [0, 1] as expected by image_to_feature_cnn logic adaptation
+    # Normalize to [0, 1] as expected by image_to_feature_cnn_lbp logic adaptation
     # (The original image_to_array function does this /255.0)
     img_arr = image_resized.astype(np.float32) / 255.0
     
     # 2. Feature Extraction
     # returns ID feature vector (e.g. 512 dims for RestNet18)
-    features = image_to_feature_cnn(img_arr)
+    features = image_to_feature_cnn_lbp(img_arr)
     
     # 3. Prediction & Unknown Handling
     # handle_unknown checks confidence threshold and returns 6 if below threshold

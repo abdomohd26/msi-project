@@ -1,10 +1,13 @@
-import sys
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+
+import sys
 import cv2
 import numpy as np
 
 # Add root to path
-sys.path.append(os.getcwd())
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def test_inference():
     print("Testing inference...")

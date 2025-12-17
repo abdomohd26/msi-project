@@ -1,10 +1,13 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import cv2
 import time
 import sys
 import os
 
 # Ensure project root is in path for imports
-sys.path.append(os.getcwd())
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deployment import inference
 

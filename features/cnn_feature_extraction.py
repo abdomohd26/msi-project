@@ -9,7 +9,10 @@ from skimage.feature import local_binary_pattern
 # =============================
 # Load EfficientNet-B0
 # =============================
-efficientnet_b0 = models.efficientnet_b0(pretrained=True)
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+
+weights = EfficientNet_B0_Weights.DEFAULT
+efficientnet_b0 = efficientnet_b0(weights=weights)
 
 # Remove classifier → feature extractor
 efficientnet_b0.classifier = nn.Identity()
