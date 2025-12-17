@@ -4,11 +4,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 import numpy as np
 from src.config import SVM_CONFIG
-from src.utils import load_dataset
+from pathlib import Path
+
+abs_path = Path("features/train_features.npy").resolve()
+abs_path1 = Path("features/train_labels.npy").resolve()
 
 # Load data
-X_train = np.load("../features/train_features.npy")
-y_train = np.load("../features/train_labels.npy")
+X_train = np.load(abs_path)
+y_train = np.load(abs_path1)
 
 # Pipeline = Scaling + SVM
 svm_pipeline = Pipeline([
