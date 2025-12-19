@@ -1,20 +1,28 @@
-import joblib
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import joblib
 from pathlib import Path
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from src.trash_unknown_handler import handle_trash_unknown
+from src.config import KNN_FEATURE_EXTRACTION_METHOD
 
 model = joblib.load("models/knn/knn_model.pkl")
+X_val = np.load(Path(f"features/{KNN_FEATURE_EXTRACTION_METHOD}/val_features.npy").resolve())
+y_val = np.load(Path(f"features/{KNN_FEATURE_EXTRACTION_METHOD}/val_labels.npy").resolve())
 
-abs_path = Path("features/val_features.npy").resolve()
-abs_path1 = Path("features/val_labels.npy").resolve()
+y_pred = np.array([handle_trash_unknown(model, x) for x in X_val])
 
-# Load validation data
-X_val = np.load(abs_path)
-y_val = np.load(abs_path1)
+classes_present = np.unique(np.concatenate([y_val, y_pred]))
 
-# Predict
-y_pred = model.predict(X_val)
 print("Accuracy:", accuracy_score(y_val, y_pred))
-print("\nClassification Report:\n", classification_report(y_val, y_pred))
-print("\nConfusion Matrix:\n", confusion_matrix(y_val, y_pred))
-import numpy as np
+print("\nClassification Report:\n", classification_report(y_val, y_pred, labels=classes_present, zero_division=0))
+conf =  confusion_matrix(y_val, y_pred, labels=classes_present)
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(conf, annot=True, fmt='d', cmap='Blues', xticklabels=classes_present, yticklabels=classes_present)
+plt.title('Confusion Matrix For KNN')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.savefig('models/knn/confusion_matrix_knn.png')
+plt.show()

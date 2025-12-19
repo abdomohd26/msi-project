@@ -8,5 +8,5 @@ def handle_unknown(model, feature_vector):
     predicted_class = np.argmax(probs)
 
     if max_prob < UNKNOWN_THRESHOLD:
-        return 6  # Unknown
+        return 6
     return predicted_class

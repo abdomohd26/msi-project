@@ -1,18 +1,14 @@
 # 🗑️ Material Stream Identification System
-Machine Learning Course – Fall 2025
 
-Classical computer vision + machine learning pipeline for post-consumer waste classification using SVM and k-NN.
+Classical computer vision + machine learning pipeline for material classification using SVM and k-NN.
 
 ================================================================
 
 ## 🎯 Project Overview
-This project implements an end-to-end feature-based vision system to classify waste materials into 6 known classes + 1 rejection class ("Unknown").
+This project implements an end-to-end feature-based vision system to classify materials into 6 known classes + 1 class ("Unknown").
 
 **Pipeline**:
 Data Augmentation → Feature Extraction → Model Training → Evaluation → Real-time Deployment
-
-**Target**:
-≥ 85% validation accuracy on the 6 primary classes.
 
 ================================================================
 
@@ -36,35 +32,55 @@ Data Augmentation → Feature Extraction → Model Training → Evaluation → R
 ```
 msi-project/
 ├── data/
-│   ├── raw/                    # Original dataset (class folders 0–5) ⭐
-│   ├── augmented/              # Augmented training images ⭐
-│   └── splits/                 # train_paths.txt, val_paths.txt ⭐
+│   ├── augmented/
+│   ├── raw/
+│   │   ├── cardboard/
+│   │   ├── glass/
+│   │   ├── metal/
+│   │   ├── paper/
+│   │   ├── plastic/
+│   │   └── trash/
+│   └── splits/
+│       ├── train_paths.csv
+│       └── val_paths.csv
 │
-├── features/                   # Extracted feature vectors (.npy) ⭐
-│   ├── train_features.npy
-│   ├── train_labels.npy
-│   ├── val_features.npy
-│   └── val_labels.npy
+├── features/
+│   ├── cnn_feature_extraction.py
+│   ├── feature_extraction.py
+│   ├── hand_crafted_feature_extraction.py
+│   └── (resnet|effientnet_lbp|etc.)/(train|val)_features*.npy
 │
-├── models/                     # Trained SVM & k-NN models
+├── models/
 │   ├── svm/
+│   │   ├── train_svm.py
+	│   └── evaluate_svm.py
 │   └── knn/
+│       ├── train_knn.py
+		 └── evaluate_knn.py
 │
-├── deployment/                 # Real-time OpenCV camera app
-│   └── realtime_app.py
+├── deployment/
+│   ├── class_mapping.json
+│   ├── realtime_app.py
+│   └── inference.py
 │
-├── src/                        # Core ML pipeline scripts
+├── src/
+│   ├── config.py
 │   ├── data_pipeline.py
-│   └── feature_extraction.py
+│   ├── feature_extraction.py
+	└── trash_unkown_handler.py
 │
-├── notebooks/                  # EDA and experiments
-├── tests/                      # End-to-end tests
-├── report/                     # Technical report and figures
-│   └── report.pdf
+├── notebooks/
+│   └── (many notebooks for experiments)
 │
-├── README.md                   # Project documentation
-├── requirements.txt            # Python dependencies
-└── .gitignore                  # Ignore large data files
+├── tests/
+│   └── test.py
+│
+├── report/
+│   └── MSI_Technical_Report.pdf
+│
+├── README.md
+├── requirements.txt
+└── .gitignore
 ```
 
 ================================================================
@@ -94,76 +110,52 @@ data/raw/
 ```
 ### 3) Run Pipeline (Step-by-Step)
 ------------------------------
-#### Step 1: Data preparation + augmentation
-python src/data_pipeline.py
+#### Run the whole project (module-style commands)
+Run the full pipeline and individual steps using the module interface below.
 
-Output:
-- Augmented images
-- train_paths.txt
-- val_paths.txt
+- Prepare data + augmentations (creates augmented images and split CSVs):
 
-#### Step 2: Feature extraction
-python features/feature_extraction.py
+```bash
+python -m src.data_pipeline
+```
 
-Output:
+- Feature extraction (set `method` inside `features/feature_extraction.py` if needed):
+- Recommended feature-extraction methods to use (configure `method` in `features/feature_extraction.py`):
+
+	- **SVM (best):** `efficientnet_lbp`
+	- **k-NN (best):** `resnet_lbp`
+
+```bash
+python -m features.feature_extraction
+```
+
+Output examples (feature files will be saved to `features/`):
+
 ```
 features/
-├── train_features.npy   (3000, 98)
+├── train_features.npy
 ├── train_labels.npy
-├── val_features.npy     (373, 98)
+├── val_features.npy
 └── val_labels.npy
 ```
-================================================================
 
-📊 Current Progress
-------------------
+- Train & evaluate models:
 
-| Step                     | Status | Output                          |
-|--------------------------|--------|---------------------------------|
-| Data Prep + Augmentation | ✅     | 3000 train, 373 val            |
-| Feature Extraction       | ✅     | 98-dim feature vectors          |
-| SVM Training             | ⏳     | models/svm/best_svm_model.pkl   |
-| k-NN Training            | ⏳     | models/knn/best_knn_model.pkl   |
-| Model Comparison         | ⏳     | models/evaluation/results.csv   |
-| Real-time Deployment     | ⏳     | deployment/realtime_app.py      |
-| Technical Report         | ⏳     | report/report.pdf               |
+```bash
+python -m models.svm.train_svm
+python -m models.svm.evaluate_svm
+python -m models.knn.train_knn
+python -m models.knn.evaluate_knn
+```
 
-================================================================
+- Realtime application (OpenCV camera app):
 
-🛠️ Technical Stack
-------------------
-**Data:**
-- PIL
-- NumPy
-- Text-based dataset splits
+```bash
+python -m deployment.realtime_app
+```
 
-**Feature Extraction:**
-- scikit-image
-- RGB & HSV histograms
-- Sobel gradient statistics
+- Run tests (place test images in `tests/test_images` first):
 
-**Models:**
-- scikit-learn
-- Support Vector Machine (SVM)
-- k-Nearest Neighbors (k-NN)
-
-**Deployment:**
-- OpenCV (real-time camera feed)
-
-================================================================
-
-📈 Feature Extraction Details
-----------------------------
-**Method:**
-hist_grad
-
-**Image Size:**
-64 × 64
-
-**Features:**
-- RGB histograms: 3 × 16 bins
-- HSV histograms: 3 × 16 bins
-- Sobel gradients: mean + std
-
-**Total Features:**
-96 (histograms) + 2 (gradients) = 98-dimensional vector
+```bash
+python -m tests.test
+```

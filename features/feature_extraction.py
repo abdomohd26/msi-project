@@ -8,11 +8,13 @@ from .hand_crafted_feature_extraction import (
     image_to_feature_hist_grad,
     image_to_feature_advanced,
 )
-
 from .cnn_feature_extraction import (
-    image_to_feature_cnn,
-    image_to_feature_cnn_lbp,
+    image_to_feature_efficientnet,
+    image_to_feature_efficientnet_lbp,
+    image_to_feature_resnet,
+    image_to_feature_resnet_lbp,
 )
+from src.config import KNN_FEATURE_EXTRACTION_METHOD, SVM_FEATURE_EXTRACTION_METHOD
 
 
 def load_split_csv(csv_path):
@@ -31,7 +33,6 @@ def load_split_csv(csv_path):
             labels.append(int(row[1]))
     return paths, np.array(labels, dtype=np.int64)
 
-
 def image_to_array(path, size=(64, 64)):
     """
     Open image, convert to RGB, resize, return as numpy array [H, W, 3] in [0,1].
@@ -41,14 +42,9 @@ def image_to_array(path, size=(64, 64)):
     arr = np.asarray(img, dtype=np.float32) / 255.0
     return arr
 
-# ---------- Batch conversion and saving ----------
 
 def paths_to_features(csv_path, output_prefix, method="hist_grad", size=(64, 64), bins=16):
     """
-    Read paths+labels from CSV, compute features, save:
-      output_prefix_features.npy
-      output_prefix_labels.npy
-    method: "flat", "hist_grad", or "advanced"
     """
     paths, labels = load_split_csv(csv_path)
 
@@ -62,10 +58,14 @@ def paths_to_features(csv_path, output_prefix, method="hist_grad", size=(64, 64)
                 feat = image_to_feature_hist_grad(arr, bins=bins)
             elif method == "advanced":
                 feat = image_to_feature_advanced(arr)
-            elif method == "cnn":
-                feat = image_to_feature_cnn(arr)
-            elif method == "cnn_lbp":
-                feat = image_to_feature_cnn_lbp(arr)
+            elif method == "efficientnet":
+                feat = image_to_feature_efficientnet(arr)
+            elif method == "efficientnet_lbp":
+                feat = image_to_feature_efficientnet_lbp(arr)
+            elif method == "resnet":
+                feat = image_to_feature_resnet(arr)
+            elif method == "resnet_lbp":
+                feat = image_to_feature_resnet_lbp(arr)
             else:
                 raise ValueError(f"Unknown method: {method}")
             if feat is not None:
@@ -90,21 +90,35 @@ def paths_to_features(csv_path, output_prefix, method="hist_grad", size=(64, 64)
 if __name__ == "__main__":
     Path("features").mkdir(exist_ok=True)
 
-    method = "cnn_lbp"  # flat, hist_grad, advanced, cnn, cnn_lbp
+    svm_method = SVM_FEATURE_EXTRACTION_METHOD
     size = (256, 256)
     
-    # Train features with advanced method
     paths_to_features(
         csv_path="data/splits/train_paths.csv",
-        output_prefix="features/train",
-        method=method,
+        output_prefix=f"features/{svm_method}/train",
+        method=svm_method,
         size=size,
     )
 
-    # Val features
     paths_to_features(
         csv_path="data/splits/val_paths.csv",
-        output_prefix="features/val",
-        method=method,
+        output_prefix=f"features/{svm_method}/val",
+        method=svm_method,
+        size=size,
+    )
+    
+    knn_method = KNN_FEATURE_EXTRACTION_METHOD
+    
+    paths_to_features(
+        csv_path="data/splits/train_paths.csv",
+        output_prefix=f"features/{knn_method}/train",
+        method=knn_method,
+        size=size,
+    )
+
+    paths_to_features(
+        csv_path="data/splits/val_paths.csv",
+        output_prefix=f"features/{knn_method}/val",
+        method=knn_method,
         size=size,
     )

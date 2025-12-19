@@ -6,9 +6,6 @@ from pathlib import Path
 from collections import defaultdict
 from PIL import Image
 
-# =============================
-# Label mapping
-# =============================
 LABEL_MAP = {
     "glass": 0,
     "paper": 1,
@@ -18,9 +15,16 @@ LABEL_MAP = {
     "trash": 5,
 }
 
-# =============================
-# Load image paths safely
-# =============================
+AUG_TARGETS = {
+    0: 500,
+    1: 500,
+    2: 420,
+    3: 450,
+    4: 450,
+    5: 300,
+}
+
+
 def load_image_paths(root_dir):
     paths_labels = []
     root_path = Path(root_dir)
@@ -49,11 +53,7 @@ def load_image_paths(root_dir):
     return paths_labels
 
 
-# =============================
-# Stratified train / val split
-# =============================
-
-def train_val_split(paths_labels, val_ratio=0.25, seed=42):
+def train_val_split(paths_labels, val_ratio=0.2, seed=42):
     random.seed(seed)
     by_class = defaultdict(list)
 
@@ -72,33 +72,25 @@ def train_val_split(paths_labels, val_ratio=0.25, seed=42):
     random.shuffle(val)
     return train, val
 
-
-# =============================
-# SAFE augmentations for materials
-# =============================
-def safe_material_augment(img):
-    # Horizontal flip (OK)
+def augment_img(img):
+    # horizontal flip 
     if random.random() < 0.5:
         img = cv2.flip(img, 1)
 
-    # Small rotation only
+    # rotation
     angle = random.uniform(-10, 10)
     h, w = img.shape[:2]
     M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
     img = cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_REFLECT)
 
-    # Mild brightness / contrast
+    # brightness / contrast
     alpha = random.uniform(0.9, 1.1)
     beta = random.uniform(-15, 15)
     img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
 
     return img
 
-
-# =============================
-# Controlled augmentation
-# =============================
-def augment_train(train_list, max_multiplier=2):
+def augment_train(train_list):
     counts = defaultdict(int)
     originals_by_label = defaultdict(list)
 
@@ -109,7 +101,7 @@ def augment_train(train_list, max_multiplier=2):
     augmented_samples = []
 
     for label, original_count in counts.items():
-        target = original_count * max_multiplier
+        target = AUG_TARGETS.get(label, original_count)
         current = original_count
 
         if current >= target:
@@ -128,7 +120,7 @@ def augment_train(train_list, max_multiplier=2):
             if img is None:
                 continue
 
-            aug_img = safe_material_augment(img)
+            aug_img = augment_img(img)
             new_name = f"{Path(orig_path).stem}_aug{i}.jpg"
             save_path = aug_dir / new_name
 
@@ -138,22 +130,16 @@ def augment_train(train_list, max_multiplier=2):
     train_list.extend(augmented_samples)
 
 
-# =============================
-# MAIN
-# =============================
+
 if __name__ == "__main__":
     root_dir = "data/raw"
 
-    # Load
     paths_labels = load_image_paths(root_dir)
 
-    # Split
     train_paths, val_paths = train_val_split(paths_labels)
 
-    # Augment (≤ 2× only)
-    augment_train(train_paths, max_multiplier=2)
+    augment_train(train_paths)
 
-    # Save CSVs
     splits_dir = Path("data/splits")
     splits_dir.mkdir(exist_ok=True)
 

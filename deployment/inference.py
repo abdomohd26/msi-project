@@ -1,32 +1,26 @@
 import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
 import cv2
 import joblib
 import json
 import numpy as np
 import sys
+from src.unknown_handler import handle_unknown
+from features.cnn_feature_extraction import image_to_feature_efficientnet_lbp
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-# Add project root to sys.path
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import project modules
-# Assumes running from project root or src is in pythonpath
-from src.unknown_handler import handle_unknown
-from features.cnn_feature_extraction import image_to_feature_cnn_lbp
-
-# Configuration
 MODEL_PATH = os.path.join("models", "svm", "svm_model.pkl")
 MAPPING_PATH = os.path.join("deployment", "class_mapping.json")
 PREPROCESS_SIZE = (128, 128)
 
-# Global resources
 _model = None
 _class_mapping = None
 
-def _load_resources():
+def load_resources():
     """
-    Lazy load model and class mapping.
+    loading model and class mapping.
     """
     global _model, _class_mapping
     
@@ -41,7 +35,6 @@ def _load_resources():
             raise FileNotFoundError(f"Mapping file not found at {MAPPING_PATH}.")
         with open(MAPPING_PATH, 'r') as f:
             data = json.load(f)
-            # Ensure keys are integers
             _class_mapping = {int(k): v for k, v in data.items()}
 
 def predict(image_bgr):
@@ -54,41 +47,27 @@ def predict(image_bgr):
     Returns:
         tuple: (class_id, label_str, confidence_score)
     """
-    _load_resources()
+    load_resources()
     
     if image_bgr is None:
         raise ValueError("Input image is None")
 
-    # 1. Preprocessing
-    # Convert BGR to RGB
+
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    
-    # Resize to match training data generation (128x128)
-    # The CNN extractor will handle further resizing/normalization if needed (internally resizes to 224)
+
     image_resized = cv2.resize(image_rgb, PREPROCESS_SIZE)
     
-    # Normalize to [0, 1] as expected by image_to_feature_cnn_lbp logic adaptation
-    # (The original image_to_array function does this /255.0)
     img_arr = image_resized.astype(np.float32) / 255.0
     
-    # 2. Feature Extraction
-    # returns ID feature vector (e.g. 512 dims for RestNet18)
-    features = image_to_feature_cnn_lbp(img_arr)
-    
-    # 3. Prediction & Unknown Handling
-    # handle_unknown checks confidence threshold and returns 6 if below threshold
+    features = image_to_feature_efficientnet_lbp(img_arr)
+
     final_class_id = handle_unknown(_model, features)
     
-    # 4. Get raw confidence for display
-    # We calculate this again to return it
     probs = _model.predict_proba([features])[0]
     confidence = float(np.max(probs))
     
-    # 5. Map label
-    if final_class_id == 6: # Unknown class ID based on prompt/handler
+    if final_class_id == 6:
         label = _class_mapping.get(6, "Unknown")
-        # If rejected, the confidence of the top class was low, 
-        # but we return that low confidence value as the score.
     else:
         label = _class_mapping.get(final_class_id, "Unknown")
         
